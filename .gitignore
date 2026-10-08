@@ -1,0 +1,37 @@
+# Environment
+.env
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Data / artifacts
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/raw/*
+data/processed/*
+data/training/*
+data/validation/*
+data/test/*
+!data/**/.gitkeep
+ml/models/*
+!ml/models/.gitkeep
+ml/notebooks/.ipynb_checkpoints/
+
+# Node / frontend
+node_modules/
+.next/
+out/
+npm-debug.log*
+
+# OS / editor / agent
+.DS_Store
+.idea/
+.vscode/
+*.swp
+.claude/
+.opencode/

@@ -1,0 +1,68 @@
+# AI-ARCTEG full stack: backend + optional MQTT broker + frontend.
+# Usage:
+#   docker compose -f docker/docker-compose.yml up --build
+#   docker compose -f docker/docker-compose.yml up -d            # detached
+services:
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    ports:
+      - "8000:8000"
+    environment:
+      ENVIRONMENT: production
+      DEBUG: "false"
+      LOG_LEVEL: INFO
+      DATABASE_URL: postgresql+psycopg://arcteg:arcteg@db:5432/arcteg
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-a-long-random-string}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+      MQTT_BROKER_URL: ${MQTT_BROKER_URL:-}
+      DEVICE_INGEST_API_KEY: ${DEVICE_INGEST_API_KEY:-dev-ingest-key}
+      SIMULATION_AUTOSTART: "true"
+    volumes:
+      - arcteg_models:/srv/backend/ml/models
+    depends_on:
+      db:
+        condition: service_healthy
+      mosquitto:
+        condition: service_started
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: arcteg
+      POSTGRES_PASSWORD: arcteg
+      POSTGRES_DB: arcteg
+    volumes:
+      - arcteg_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U arcteg -d arcteg"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  arcteg_pgdata:
+  arcteg_models:
